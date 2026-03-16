@@ -1,87 +1,244 @@
-namespace FileSearch
+using System.Text.RegularExpressions;
+
+namespace SmartNote
 {
     public partial class Form1 : Form
     {
-        string searchPath = "";
-
         public Form1()
         {
             InitializeComponent();
+            DateBase.Init();
+            LoadNotes();
         }
 
-        private void buttonFolder_Click_Click(object sender, EventArgs e)
+        void LoadNotes()
         {
-            FolderBrowserDialog dialog = new FolderBrowserDialog();
-            if (dialog.ShowDialog() == DialogResult.OK)
+            var notes = DateBase.GetAll();
+
+            listNotes.DataSource = null;
+            listNotes.DataSource = notes;
+            listNotes.DisplayMember = "Title";
+        }
+
+        private void btnNew_Click(object sender, EventArgs e)
+        {
+            listNotes.ClearSelected();
+            txtTitle.Text = "";
+            txtContents.Text = "";
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            var note = (Note)listNotes.SelectedItem;
+            if (note == null)
             {
-                searchPath = dialog.SelectedPath;
-                textBoxPath.Text = searchPath;
+                DateBase.Add(txtTitle.Text, txtContents.Text);
+            }
+            else
+            {
+                DateBase.Update(note.Id, txtTitle.Text, txtContents.Text);
+            }
+            LoadNotes();
+            MessageBox.Show("‰øùÂ≠ò„Åó„ÅüÔºÅ");
+        }
+
+        private void listNotes_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var note = (Note)listNotes.SelectedItem;
+            if (note == null) return;
+
+            txtTitle.Text = note.Title;
+            txtContents.Text = note.Content;
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            var note = (Note)listNotes.SelectedItem;
+            if (note == null) return;
+            var result = MessageBox.Show(
+                "ÂâäÈô§„Åô„ÇãÔºÅ",
+                "Á¢∫Ë™ç",
+                MessageBoxButtons.YesNo);
+            if (result == DialogResult.Yes)
+            {
+                DateBase.Delete(note.Id);
+                LoadNotes();
+                MessageBox.Show("ÂâäÈô§„Åó„ÅüÔºÅ");
             }
         }
 
-        private async void buttonSearch_Click(object sender, EventArgs e)
+        private void txtSearch_TextChanged(object sender, EventArgs e)
         {
-            string keyword = textBoxKeyword.Text;
-            if (string.IsNullOrEmpty(searchPath))
+            var word = txtSearch.Text;
+
+            if (string.IsNullOrWhiteSpace(word))
             {
-                MessageBox.Show("åüçıÇ∑ÇÈÉtÉHÉãÉ_ÇëIëÇµÇƒÇ≠ÇæÇ≥Ç¢ÅB");
-                return;
+                LoadNotes();
             }
-            dataGridView1.Rows.Clear();
-            await Task.Run(() => SearchDirectory(searchPath, keyword));
-
-            void SearchDirectory(string dir, string words)
+            else
             {
-                string[] files = [];
-                try
-                {
-                    files = Directory.GetFiles(dir);
-                }
-                catch
-                {
-                    return;
-                }
+                listNotes.DataSource = null;
+                listNotes.DataSource = DateBase.Search(word);
+                listNotes.DisplayMember = "Title";
+            }
+        }
 
-                foreach (var file in files)
-                {
-                    string name = Path.GetFileName(file);
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.S)
+            {
+                btnSave.PerformClick();
+            }
+        }
 
-                    if (name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+        void ApplyDarkTheme()
+        {
+            this.BackColor = Color.FromArgb(30, 30, 30);
+
+            txtTitle.BackColor = Color.FromArgb(45, 45, 45);
+            txtTitle.ForeColor = Color.White;
+
+            txtContents.BackColor = Color.FromArgb(45, 45, 45);
+            txtContents.ForeColor = Color.White;
+
+            listNotes.BackColor = Color.FromArgb(45, 45, 45);
+            listNotes.ForeColor = Color.White;
+
+            btnNew.BackColor = Color.FromArgb(70, 70, 70);
+            btnSave.BackColor = Color.FromArgb(70, 70, 70);
+            btnDelete.BackColor = Color.FromArgb(70, 70, 70);
+
+            btnNew.ForeColor = Color.White;
+            btnSave.ForeColor = Color.White;
+            btnDelete.ForeColor = Color.White;
+            listNotes.BorderStyle = BorderStyle.None;
+
+            label1.BackColor = Color.FromArgb(45, 45, 45);
+            label1.ForeColor = Color.White;
+            label2.BackColor = Color.FromArgb(45, 45, 45);
+            label2.ForeColor = Color.White;
+
+            txtSearch.BackColor = Color.FromArgb(45, 45, 45);
+            txtSearch.ForeColor = Color.White;
+
+            btnTheme.BackColor = Color.FromArgb(70, 70, 70);
+            btnTheme.ForeColor = Color.White;
+            btnTheme.Text = " Light";
+        }
+
+        void ApplyLightTheme()
+        {
+            this.BackColor = Color.White;
+            txtTitle.BackColor = Color.White;
+            txtTitle.ForeColor = Color.Black;
+
+            txtContents.BackColor = Color.White;
+            txtContents.ForeColor = Color.Black;
+
+            listNotes.BackColor = Color.White;
+            listNotes.ForeColor = Color.Black;
+
+            btnNew.BackColor = Color.LightGray;
+            btnSave.BackColor = Color.LightGray;
+            btnDelete.BackColor = Color.LightGray;
+
+            btnNew.ForeColor = Color.Black;
+            btnSave.ForeColor = Color.Black;
+            btnDelete.ForeColor = Color.Black;
+
+            label1.BackColor = Color.White;
+            label1.ForeColor = Color.Black;
+            label2.BackColor = Color.White;
+            label2.ForeColor = Color.Black;
+
+            txtSearch.BackColor = Color.White;
+            txtSearch.ForeColor = Color.Black;
+
+            btnTheme.BackColor = Color.LightGray;
+            btnTheme.ForeColor = Color.Black;
+            btnTheme.Text = " Dark";
+        }
+
+        private void c(object sender, PaintEventArgs e)
+        {
+
+        }
+        bool isDark = false;
+        private void btnTheme_Click(object sender, EventArgs e)
+        {
+            if (isDark)
+            {
+                ApplyLightTheme();
+                isDark = false;
+            }
+            else
+            {
+                ApplyDarkTheme();
+                isDark = true;
+            }
+        }
+
+        private void txtContents_DoubleClick(object sender, EventArgs e)
+        {
+            var text = txtContents.SelectedText;
+
+            if (text.StartsWith("[[") && text.EndsWith("]]"))
+            {
+                var title = text.Replace("[[", "").Replace("]]", "");
+                var note = DateBase.GetByTitle(title);
+
+                if (note != null)
+                {
+                    txtTitle.Text = note.Title;
+                    txtContents.Text = note.Content;
+                }
+            }
+        }
+
+        void HighlightLinks()
+        {
+            int cursor = txtContents.SelectionStart;
+
+            txtContents.SelectAll();
+            txtContents.SelectionColor = Color.White;
+            var matches = Regex.Matches(txtContents.Text, @"\[\[(.*?)\]\]");
+            foreach (Match match in matches)
+            {
+                txtContents.Select(match.Index, match.Length);
+                txtContents.SelectionColor = Color.DeepSkyBlue;
+            }
+            if(cursor > txtContents.Text.Length)
+                cursor = txtContents.Text.Length;
+            txtContents.Select(cursor, 0);
+        }
+
+        private void txtContents_TextChanged(object sender, EventArgs e)
+        {
+            HighlightLinks();
+        }
+
+        private void txtContents_DoubleClick_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void txtContents_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            int index = txtContents.GetCharIndexFromPosition(e.Location);
+            string text = txtContents.Text;
+            var matches = Regex.Matches(text, @"\[\[(.*?)\]\]");
+            foreach (Match match in matches)
+            {
+                if(index >= match.Index && index <=match.Index + match.Length)
+                {
+                    string title = match.Groups[1].Value;
+                    var note = DateBase.GetByTitle(title);
+                    if(note != null)
                     {
-                        Invoke(new Action(() =>
-                        {
-                            dataGridView1.Rows.Add(name, file);
-                        }));
+                        txtTitle.Text = note.Title;
+                        txtContents.Text = note.Content;
                     }
                 }
-
-                string[] dirs = [];
-                try
-                {
-                    dirs = Directory.GetDirectories(dir);
-                }
-                catch
-                {
-                    return;
-                }
-                foreach (var subdir in dirs)
-                {
-                    SearchDirectory(subdir, words);
-                }
-            }
-        }
-
-        private void dataGridView1_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
-        {
-            string path = dataGridView1.Rows[e.RowIndex].Cells[1].Value?.ToString() ?? "";
-            if (!string.IsNullOrEmpty(path))
-            {
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = path,
-                    UseShellExecute = true   // Å© Ç±ÇÍÇ™èdóv
-                };
-                System.Diagnostics.Process.Start(psi);
             }
         }
     }
